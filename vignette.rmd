@@ -1,0 +1,50 @@
+---
+title: "Vignette"
+author: "Rachel Fellman"
+date: "2023-10-02"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+This document is intended to explain how to contact and API and query, parse, and return readable data from said API. I will be accessing the earthquake api from the USGS.
+
+# Required Packages
+I used the following packages to create the vignette:
+  * `httr`: for accessing the API
+  * `jsonlite`: to convert API data into a data frame
+  * `tidyverse`: used for piping, plotting, and other basic functions
+
+
+I first started by loading the necessary packages into rstudio. 
+
+```{r}
+library(tidyverse)
+library(jsonlite)
+library(httr)
+```
+
+
+# Functions to Query Endpoints
+
+The first function I will create will be to call data on earthquakes greater than or equal to a certain magnitude. 
+
+```{r}
+magnitude <- function(magnitude = 1) {
+  a<- fromJSON('https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson')
+  b<- a$features$properties %>% 
+    select('mag', 'place','time','type') %>% 
+    filter(mag >= magnitude)
+  return(as_tibble(b))
+}
+```
+
+
+
+
+# Contingency Tables
+
+# Numerical Summaries Across Variables
+
+# Plots
