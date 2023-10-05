@@ -7,8 +7,9 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
-This document is intended to explain how to contact and API and query, parse, and return readable data from said API. I will be accessing the earthquake api from the USGS.
+This document is intended to explain how to contact and API and query, parse, and return readable data from an API. I will be accessing the earthquake api from the USGS. There is no API key required to access this API.
 
 # Required Packages
 I used the following packages to create the vignette:
@@ -20,6 +21,7 @@ I used the following packages to create the vignette:
 I first started by loading the necessary packages into rstudio. 
 
 ```{r}
+library(expss)
 library(tidyverse)
 library(jsonlite)
 library(httr)
@@ -28,14 +30,25 @@ library(httr)
 
 # Functions to Query Endpoints
 
-The first function I will create will be to call data on earthquakes greater than or equal to a certain magnitude. 
+Before creating functions to query specific endpoints of the API, I will create a function to assign labels to each variable, making them easier to understand. The input for this function is a singular data frame. 
 
 ```{r}
-magnitude <- function(magnitude = 1) {
-  a<- fromJSON('https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson')
+label <- function(x){
+  x <- apply_labels(x,
+                    mag = 'Magnitude')
+}
+```
+
+
+`magnitude`
+The first function I will create will be to call data on earthquakes within a certain magnitude range including the endpoints of the range. The magnitude can be any number from -1 to 10. The 
+
+```{r}
+magnitude <- function(magmin = -1, magmax = 10) {
+  a<- fromJSON("https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson")
   b<- a$features$properties %>% 
-    select('mag', 'place','time','type') %>% 
-    filter(mag >= magnitude)
+    select('mag','place','time','tz','felt','alert','tsunami','sig','net','nst','dmin','rms','gap','magType','type') %>% 
+    filter(mag > magmin &  mag < magmax)
   return(as_tibble(b))
 }
 ```
