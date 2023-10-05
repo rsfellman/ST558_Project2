@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 This document is intended to explain how to contact and API and query, parse, and return readable data from an API. I will be accessing the earthquake api from the USGS. There is no API key required to access this API.
 
+I am interested in investigating earthquakes 
+
 # Required Packages
 I used the following packages to create the vignette:
   * `httr`: for accessing the API
@@ -39,22 +41,75 @@ label <- function(x){
 }
 ```
 
+The first function `query.data` will allow the user to chose a minimum and maximum magnitude, maximum gap, and event type.  Magnitude values can range from -1 to 10. The gap is the azimuthal gap between stations. The smaller the gap, the more accurate the calculations of the position of the earthquake are. This value can be between 0.0 and 180.0 degrees. The event type will have a default value of earthquake but can also take on any of the following values:
 
-`magnitude`
-The first function I will create will be to call data on earthquakes within a certain magnitude range including the endpoints of the range. The magnitude can be any number from -1 to 10. The 
+  *accidental explosion
+  *acoustic noise
+  *acoustic_noise
+  *anthropogenic_event
+  *building collapse
+  *chemical explosion
+  *chemical_explosion
+  *collapse
+  *experimental explosion
+  *explosion
+  *ice quake
+  *induced or triggered event
+  *industrial explosion
+  *landslide
+  *meteor
+  *meteorite
+  *mine collapse
+  *mine_collapse
+  *mining explosion
+  *mining_explosion
+  *not reported
+  *not_reported
+  *nuclear explosion
+  *nuclear_explosion
+  *other
+  *other_event
+  *quarry
+  *quarry_blast
+  *rockslide
+  *rock_burst
+  *snow_avalanche
+  *sonic boom
+  *sonicboom
+  *sonic_boom
+  *train crash
+  *volcanic eruption
+  *volcanic explosion
 
 ```{r}
-magnitude <- function(magmin = -1, magmax = 10) {
-  a<- fromJSON("https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson")
-  b<- a$features$properties %>% 
-    select('mag','place','time','tz','felt','alert','tsunami','sig','net','nst','dmin','rms','gap','magType','type') %>% 
-    filter(mag > magmin &  mag < magmax)
-  return(as_tibble(b))
+query.data <- function(min.mag = 0, max.mag = 10, max.gap = 90.0, event.type = "earthquake"){
+  #make the api url to query the endpoints specified in the function inputs
+  my.url <- paste0("https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson",
+                "&minmagnitude=", min.mag,
+                "&maxmagnitude=", max.mag,
+                "&maxgap=",max.gap,
+                "&eventtype=", event.type)
+  
+  #get data from api using url created above
+  quake.data <- fromJSON(my.url)
+  
+  #return a dataframe of earthquake data
+  return(as_tibble(quake.data$features$properties))
 }
 ```
 
+The next function `eq.location` will allow the user to specify a specific max depth in km (from -100 to 1000) and region (state, state abbreviation, or country) and will return the data for said region. The default region will be set to CA since that is a location known for having a lot of seismic activity.
 
-
+```{r}
+eq.location <- function(region1 = "CA", region2 = "Hawaii" max.depth = 100){
+  my.url <- paste0("https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake",
+                "&maxdepth=", max.depth)
+  quake.data <- fromJSON(my.url)
+  location<- quake.data$features$properties%>% 
+                     filter(grepl(region, place))
+   return(as_tibble(location))
+}
+```
 
 # Contingency Tables
 
