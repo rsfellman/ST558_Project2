@@ -7,7 +7,6 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 ```
 This document is intended to explain how to contact and API and query, parse, and return readable data from an API. I will be accessing the earthquake api from the USGS. There is no API key required to access this API.
 
@@ -23,7 +22,6 @@ I used the following packages to create the vignette:
 I first started by loading the necessary packages into rstudio. 
 
 ```{r}
-library(expss)
 library(tidyverse)
 library(jsonlite)
 library(httr)
@@ -122,8 +120,6 @@ quake.data.col<- quake.data$features$properties %>%
 }
 ```
 
-
-
 # Call API Functions
 
 I will pull data from the API using my `query.data` function. I will set the minimum magnitude to 0 and the maximum to 4, to look at smaller earthquakes. (Magnitude is a measure of the size of an earthquake at its source). I will set the maximum gap to 180 degrees since the USGS states that earthquake locations with a gap larger than 180 degrees tend to have larger location and depth uncertainties. I will not change the settings for event type since I am primarily interested only in events classified as earthquakes.
@@ -132,6 +128,7 @@ I will pull data from the API using my `query.data` function. I will set the min
 earthquakes.low <- query.data(min.mag = 0, max.mag = 4, max.gap = 180)
 earthquakes.low
 ```
+
 I will again pull data from the API using the `query.data` function but changing the magnitude settings to be between 4 and 10. All other inputs will remain the same as above. 
 
 ```{r}
@@ -141,11 +138,16 @@ earthquakes.high
 
 I will also pull data from my `eq.location` function. I will specify the latitude 19.74 and longitude -155.84. This is the latitude and longitude for Hawaii. I will increase the maximum radius to 200km. I am choosing Hawaii for this function since it is a location in the US known for having siesmic acitvity. 
 
+I will also create a data frame for all earthquakes magnitude 0 to 10.
+```{r}
+earthquakes.all <- query.data(min.mag = -1, max.mag = 10, max.gap = 180)
+```
+
+
 ```{r}
 eq.Hawaii <- eq.location(latitude = 19.74, longitude = -155.84, max.radius = 200)
 eq.Hawaii
 ```
-
 
 # Contingency Tables
 
@@ -199,7 +201,6 @@ eq.Hawaii %>%
 ```
 This shows that the minimum magnitude earthquake measuring .13 was measured using the md method while the smallest earthquake measured using the ml method was a magnitude 1. This makes sense since the md method is better for measuring very small events.
 
-
 # Plots
 
 First I will create a bar plot of the networks and magtypes for the lower magnitue data. Since the most used measurement methods for low magnitude earthquakes are md and ml I will first filter to include only those methods. This will just give us a better visualization of which networks use which methods more frequently.
@@ -213,7 +214,7 @@ method.earthquake.low <- earthquakes.low %>%
 g<- ggplot(data = method.earthquake.low, aes(x=magType))
 #add bar plot with net as the factor
 g + geom_bar(aes(fill = as.factor(net)), position = "dodge") +
-#add labels
+#add labels/ titles
   labs(x = "Measurement Method", title = "Magnitude Measurement Methods Across Networks for Earthquakes Under Magnitude 4") + 
   scale_fill_discrete(name= "Network", labels = c("Alaska Volcano Observatory", "California Integrated Seismic Network: Southern California", "Hawaii Volcano Observatory", "Montana Bureau of Mines and Geology", "California Integrated Seismic Network: Northern Californa", "New Madrid Seismic Network","Oklahoma Seismic Network", "Puerto Rico Seismic Network","Center for Earthquake Research and Information", "USGS National Earthquake Information Center","Texas Seismological Network", "University of Utah Seismograph Stations", "Pacific Northwest Seismic Network")) +
 #adjust plot sizing
@@ -221,4 +222,40 @@ g + geom_bar(aes(fill = as.factor(net)), position = "dodge") +
 ```
 
 From this bar graph it is easy to see that the California Integrated Seismic network in both Northern and Southern California collect a large amount of earthquake data. However, it is easy to see here that the md method is used most commonly by the Northern California network and the ml method by the Southern California network. This may be due to the typical magnitude of the earthquakes found in each region. 
+
+
+Next I will create a histogram of the magnitude for the lower magnitude earthquakes. I am interested in the distribution of the earthquakes and if it is skewed in any direction.
+```{r}
+#create base plot
+a <- ggplot(data= earthquakes.low, aes(x = mag))
+#add histogram
+a + geom_histogram(color = "blue",fill = "darkgrey", size = .6, binwidth = .2, weight = 2) +
+#add labels
+  labs(x = "Magnitude", title = "Histogram of Earthquake Magnitude for Earthquakes Under Magnitude 4")
+  
+```
+
+The lower magnitude earthquakes appear to be slightly right skewed, with most earthquakes centering around a magnitude of 1.
+
+It is clear that the lower magnitude earthquake data is skewed, so I am interested in seeing if the data as a whole (not slpit into low and high magnitude) also appears skewed. 
+I will use `geom_density` to look at the spread of the data.
+
+```{r}
+#create base plot
+b<- ggplot(earthquakes.all)
+#add boxplot layer
+b + geom_density(aes(x= mag), adjust = .5, alpha = .5, fill = "lightblue") +
+#add labels/titles
+  labs(x = "Magnitude", title= "Kernel Density Plot of Earthquake Magnitudes")
+
+```
+
+When looking at the data as whole, it still appears to be right skewed, meaning that the majority of earthquakes are smaller/have a lower magnitude. However we can see that there are also quite a few earthquakes that measure around a magnitude of 4.5, as the density plot displays a local maximum there.
+
+
+Next I will compare 2 numerical variables `mag` and `sig`. `sig` is a number that signifies the significance of the seismic event. While the calculation of this number does take into account the magnitude, it also includes other factors such as intensity, felt reports, and estimated impact. While I would guess that there would be a positive relationship between the two variables, this graph will help with our exploratory data analysis so we can find out. 
+
+```{r}
+c<- ggplot(earthquakes.all, )
+```
 
