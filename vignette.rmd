@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 This document is intended to explain how to contact and API and query, parse, and return readable data from an API. I will be accessing the earthquake api from the USGS. There is no API key required to access this API.
 
-I am interested in investigating earthquakes of varying magnitudes and regions. Do different regions have higher magnitude earthquakes than others? Are most earthquakes within a certain magnitude range? Are there different measurement methods that are more common for measuring earthquake magnitude?
+I am interested in investigating earthquakes of varying magnitudes and regions. Do different regions have higher magnitude earthquakes than others? Are most earthquakes within a certain magnitude range? Are there different measurement methods that are more common for measuring earthquake magnitude? Are there observable patterns in the earthquake data?
 
 # Required Packages
 I used the following packages to create the vignette:
@@ -25,6 +25,7 @@ I first started by loading the necessary packages into rstudio.
 library(tidyverse)
 library(jsonlite)
 library(httr)
+library(maps)
 ```
 
 
@@ -113,9 +114,14 @@ eq.location <- function(latitude, longitude, max.radius = 100){
   #get data from api with url created above
   quake.data <- fromJSON(my.url)
   
+  #get longitude and latitude data from quake.data and convert it into a dataframe
+  quake.loc <- as.data.frame(data.table::transpose(quake.data$features$geometry$coordinates), col.names = c("longitude","latitude","x"))
+  
+  #combine longitude and latitude data with other data
+  quake.data.all <- cbind(quake.loc, quake.data$features$properties)
   #select specific columns .
-quake.data.col<- quake.data$features$properties %>% 
-    select('mag','place','time','sig','net','code','ids','dmin','nst','rms','gap','magType','type')
+  quake.data.col <- quake.data.all %>% 
+    select('mag','place','time','sig','net','code','ids','dmin','nst','rms','gap','magType','type', 'longitude','latitude')
    return(as_tibble(quake.data.col))
 }
 ```
@@ -253,9 +259,38 @@ b + geom_density(aes(x= mag), adjust = .5, alpha = .5, fill = "lightblue") +
 When looking at the data as whole, it still appears to be right skewed, meaning that the majority of earthquakes are smaller/have a lower magnitude. However we can see that there are also quite a few earthquakes that measure around a magnitude of 4.5, as the density plot displays a local maximum there.
 
 
-Next I will compare 2 numerical variables `mag` and `sig`. `sig` is a number that signifies the significance of the seismic event. While the calculation of this number does take into account the magnitude, it also includes other factors such as intensity, felt reports, and estimated impact. While I would guess that there would be a positive relationship between the two variables, this graph will help with our exploratory data analysis so we can find out. 
+Next I will compare 2 numerical variables `mag` and `sig`. `sig` is a number that signifies the significance of the seismic event. While the calculation of this number does take into account the magnitude, it also includes other factors such as intensity, felt reports, and estimated impact. While I would guess that there would be a positive relationship between the two variables, this graph will help with our exploratory data analysis so we can find out I will also 
 
 ```{r}
-c<- ggplot(earthquakes.all, )
+c<- ggplot(earthquakes.all)
+c+ geom_point(aes(x = mag, y = sig)) +
+  facet_wrap(~ magType)
 ```
 
+
+Next I will use `ggplot` to make a map of some of the earthquake data. I will start by using my `eq.location` function to get data from the API in an 800km radius around the center of California. I will then plot the points on a base map of the United States and color the points on a color gradient with light blue being the lowest magnitude earthquakes and dark blue being the highest. 
+
+
+```{r}
+#call data from API
+eq.california <- eq.location(latitude = 36.77, longitude = -119.42, max.radius = 800)
+
+#set up state data points
+state<- map_data("state")
+
+#creat base map layer
+d<- ggplot()
+#add latitude and longitude information for the map
+ d + geom_polygon(data = state, aes(x=long, y= lat, group = group), color = "black", fill = "grey") +
+#add the points of the earthquakes in california
+   geom_point(data = eq.california, aes(x = longitude, y = latitude, colour = mag))  +
+#add a color gradient for the magnitude of the earthquakes
+   scale_colour_gradient(low = "lightblue", high = "darkblue", name = "Magnitude")+
+#adjust the coordinates
+  coord_cartesian(xlim = c(-127,-110), ylim = c(30,50)) +
+#add labels.
+  labs(x = "Longitude", y = "Latitude", title = "Plot of Earthquake Locations in a 800 km Radius of the Center of California")
+
+```
+
+The interesting thing about this plot is that we can actually see the San Andreas Fault that follows the California Coast. The map used a color gradient for the magnitude of the earthquake, allowing more information to be displayed on them map. Interestingly the highest magnitude earthquake does not appear to be on the San Andreas Fault, but is instead inland in Northern California. This could be of interest for future studies. The majority of the earthquakes seem to be in the 1 to 3 magnitude range.
