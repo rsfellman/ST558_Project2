@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 This document is intended to explain how to contact and API and query, parse, and return readable data from an API. I will be accessing the earthquake api from the USGS. There is no API key required to access this API.
 
-I am interested in investigating earthquakes of varying magnitudes, depths and regions. Do different regions have higher magnitude earthquakes than others? Are most earthquakes within a certain magnitude range? 
+I am interested in investigating earthquakes of varying magnitudes and regions. Do different regions have higher magnitude earthquakes than others? Are most earthquakes within a certain magnitude range? Are there different measurement methods that are more common for measuring earthquake magnitude?
 
 # Required Packages
 I used the following packages to create the vignette:
@@ -161,8 +161,64 @@ When looking at the lower magnitude earthquakes it seems like the ml method is u
 table(earthquakes.high$magType, earthquakes.high$net)
 ```
 
-My first obervation is that there are fewer networks that measure high magnitude earthquakes. This may be beacuse there are fewer occurrences of high magnitude earthquakes. The 
+My first observation is that there are fewer networks that measure high magnitude earthquakes. This may be because there are fewer occurrences of high magnitude earthquakes. The most commonly used method by the us network (USGS National Earthquake Information Center) Is the mb method. This makes sense since the mb method is useful for earthquakes of magnitude 4 to 6.5.
 
-# Numerical Summaries Across Variables
+
+# Numerical Summaries Across Categorical Variables
+
+I am interested to look at the average, median, and standard deviation low magnitude and high magnitude earthquakes measured by each network. The reason I am including both the median and mean is to account for outliers affecting the average.
+
+```{r}
+earthquakes.low %>% 
+  group_by(net) %>% 
+  summarize(min = min(mag), max = max(mag), avg = mean(mag), med = median(mag), sd= sd(mag))
+```
+The highest average earthquakes had data collected by the Puerto Rico Seismic Network (pr) and the Center for Earthquake Research and Information (SE). I didn't know that Puerto Rico was a location that had earthquakes so this is a surprise to me. 
+
+```{r}
+earthquakes.high %>% 
+  group_by(net) %>% 
+  summarize(min = min(mag), max = max(mag), avg = mean(mag), med = median(mag), sd= sd(mag))
+```
+
+The maximum earthquake measured was a magnitude 6.8 much higher than the averages for all networks which stay between 4 and 5. 
+
+I am curious where the 6.8 magnitude earthquake was so instead of just summarizing I will use the `filter` function and explore further.
+
+```{r}
+earthquakes.high %>% 
+  filter(mag == 6.8)
+```
+The highest magnitude earthquake in the data we pulled from the API was in Al Haouz, Morocco.
+
+Next I want to look at measures of center and spread for the magnitude of earthquakes in Hawaii across the magType variable.  
+```{r}
+eq.Hawaii %>% 
+  group_by(magType) %>% 
+  summarize(min = min(mag), max = max(mag), avg = mean(mag), med = mean(mag), sd = sd(mag))
+```
+This shows that the minimum magnitude earthquake measuring .13 was measured using the md method while the smallest earthquake measured using the ml method was a magnitude 1. This makes sense since the md method is better for measuring very small events.
+
 
 # Plots
+
+First I will create a bar plot of the networks and magtypes for the lower magnitue data. Since the most used measurement methods for low magnitude earthquakes are md and ml I will first filter to include only those methods. This will just give us a better visualization of which networks use which methods more frequently.
+
+```{r}
+#filter magType variable
+method.earthquake.low <- earthquakes.low %>% 
+  filter(magType == "md" | magType == "ml")
+
+#create base plot
+g<- ggplot(data = method.earthquake.low, aes(x=magType))
+#add bar plot with net as the factor
+g + geom_bar(aes(fill = as.factor(net)), position = "dodge") +
+#add labels
+  labs(x = "Measurement Method", title = "Magnitude Measurement Methods Across Networks for Earthquakes Under Magnitude 4") + 
+  scale_fill_discrete(name= "Network", labels = c("Alaska Volcano Observatory", "California Integrated Seismic Network: Southern California", "Hawaii Volcano Observatory", "Montana Bureau of Mines and Geology", "California Integrated Seismic Network: Northern Californa", "New Madrid Seismic Network","Oklahoma Seismic Network", "Puerto Rico Seismic Network","Center for Earthquake Research and Information", "USGS National Earthquake Information Center","Texas Seismological Network", "University of Utah Seismograph Stations", "Pacific Northwest Seismic Network")) +
+#adjust plot sizing
+  theme(legend.title = element_text(size=7), legend.text = element_text(size=6), title = element_text(size = 10), plot.margin = margin(.1,.1,.1,.1,"cm"))
+```
+
+From this bar graph it is easy to see that the California Integrated Seismic network in both Northern and Southern California collect a large amount of earthquake data. However, it is easy to see here that the md method is used most commonly by the Northern California network and the ml method by the Southern California network. This may be due to the typical magnitude of the earthquakes found in each region. 
+
