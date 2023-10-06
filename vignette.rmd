@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 This document is intended to explain how to contact and API and query, parse, and return readable data from an API. I will be accessing the earthquake api from the USGS. There is no API key required to access this API.
 
-I am interested in investigating earthquakes 
+I am interested in investigating earthquakes of varying magnitudes, depths and regions. Do different regions have higher magnitude earthquakes than others? Are most earthquakes within a certain magnitude range? 
 
 # Required Packages
 I used the following packages to create the vignette:
@@ -93,25 +93,75 @@ query.data <- function(min.mag = 0, max.mag = 10, max.gap = 90.0, event.type = "
   #get data from api using url created above
   quake.data <- fromJSON(my.url)
   
+  #select specific columns
+  quake.data.col<- quake.data$features$properties %>% 
+    select('mag','place','time','sig','net','code','ids','dmin','nst','rms','gap','magType','type')
+  
   #return a dataframe of earthquake data
-  return(as_tibble(quake.data$features$properties))
+  return(as_tibble(quake.data.col))
 }
 ```
 
-The next function `eq.location` will allow the user to specify a specific max depth in km (from -100 to 1000) and region (state, state abbreviation, or country) and will return the data for said region. The default region will be set to CA since that is a location known for having a lot of seismic activity.
+The next function `eq.location` will allow the user to specify a latitude, longitude and maximum radius in km. This function will return data on earthquakes that occurred within the specified radius of the chosen longitude and latitude. The only default value will be the maximum radius set to 100 km. Latitude values can be from -90 to 90 degrees and longitude values can span from -180 to 180 degrees. 
 
 ```{r}
-eq.location <- function(region1 = "CA", region2 = "Hawaii" max.depth = 100){
+eq.location <- function(latitude, longitude, max.radius = 100){
+  #create URL for user specified depth
   my.url <- paste0("https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake",
-                "&maxdepth=", max.depth)
+                "&latitude=", latitude,
+                "&longitude=", longitude,
+                "&maxradiuskm=", max.radius)
+  
+  #get data from api with url created above
   quake.data <- fromJSON(my.url)
-  location<- quake.data$features$properties%>% 
-                     filter(grepl(region, place))
-   return(as_tibble(location))
+  
+  #select specific columns .
+quake.data.col<- quake.data$features$properties %>% 
+    select('mag','place','time','sig','net','code','ids','dmin','nst','rms','gap','magType','type')
+   return(as_tibble(quake.data.col))
 }
 ```
 
+
+
+# Call API Functions
+
+I will pull data from the API using my `query.data` function. I will set the minimum magnitude to 0 and the maximum to 4, to look at smaller earthquakes. (Magnitude is a measure of the size of an earthquake at its source). I will set the maximum gap to 180 degrees since the USGS states that earthquake locations with a gap larger than 180 degrees tend to have larger location and depth uncertainties. I will not change the settings for event type since I am primarily interested only in events classified as earthquakes.
+
+```{r}
+earthquakes.low <- query.data(min.mag = 0, max.mag = 4, max.gap = 180)
+earthquakes.low
+```
+I will again pull data from the API using the `query.data` function but changing the magnitude settings to be between 4 and 10. All other inputs will remain the same as above. 
+
+```{r}
+earthquakes.high <- query.data(min.mag = 4, max.mag = 10, max.gap = 180)
+earthquakes.high
+```
+
+I will also pull data from my `eq.location` function. I will specify the latitude 19.74 and longitude -155.84. This is the latitude and longitude for Hawaii. I will increase the maximum radius to 200km. I am choosing Hawaii for this function since it is a location in the US known for having siesmic acitvity. 
+
+```{r}
+eq.Hawaii <- eq.location(latitude = 19.74, longitude = -155.84, max.radius = 200)
+eq.Hawaii
+```
+
+
 # Contingency Tables
+
+Next I will examine the data pulled from the API with my functions. Using `earthquakes.low` and `earthquakes.high`, I will create contingency tables fo magType and net. magType tells us the method used to calculate the magnitude for the event. This is of interest because different methods could produce different results. The net variable provides the ID for the network that is the main source of information for a given earthquake. The networks include places such as AK: ALaska Earthquake Center, HV: Hawaii Vocano Observatory, etc. The reason I am creating a 2 way table with magType and net is to see if different networks use a certain method more.
+
+```{r}
+table(earthquakes.low$magType, earthquakes.low$net)
+```
+
+When looking at the lower magnitude earthquakes it seems like the ml method is used most frequently. The ML method is the original magnitude scale defined Richter and Gutenberg. It makes sense that this is a commonly used method by many stations for low magnitude earthquakes since the ML scale is most accurate for earthquakes with a magnitude less than 4. The nc network (California Integrated Seismic Network) also has a high frequency for the md method. This method is also useful for lower magnitude earthquakes and is sometimes the only available method for very small seismic events. 
+
+```{r}
+table(earthquakes.high$magType, earthquakes.high$net)
+```
+
+My first obervation is that there are fewer networks that measure high magnitude earthquakes. This may be beacuse there are fewer occurrences of high magnitude earthquakes. The 
 
 # Numerical Summaries Across Variables
 
