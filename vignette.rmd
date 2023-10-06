@@ -258,18 +258,32 @@ b + geom_density(aes(x= mag), adjust = .5, alpha = .5, fill = "lightblue") +
 
 When looking at the data as whole, it still appears to be right skewed, meaning that the majority of earthquakes are smaller/have a lower magnitude. However we can see that there are also quite a few earthquakes that measure around a magnitude of 4.5, as the density plot displays a local maximum there.
 
+I am also curious about the distribution of the Hawaii earthquake magnitudes. I will create a density plot of the Hawaii data (colored in green) layered over all of the smaller (magnitude < 4) earthquake data to see if they follow a similar distributions. 
+```{r}
+#create base plot
+a <- ggplot(data= earthquakes.low, aes(x = mag))
+#add histogram
+a + geom_histogram(fill = "darkgrey", binwidth = .3, color = "black") +
+#add labels
+  geom_histogram(data = eq.Hawaii, aes(x = mag), color =  "darkgreen",fill = "green", binwidth = .2)+
+  labs(x = "Magnitude", title = "Histogram of Earthquakes of Magnitude < 4 and Hawaii Earthquake Magnitudes")
+  
+```
+In this histogram we can see that Hawaii's earthquake data is skewed a bit to the left with many earthquakes closer to a magnitude of 2. This does not follow the same trend as data on all smaller earthquakes that records the majority of earthquakes around a magnitude of 1. I am not surprised by this data since Hawaii is an active volcano which can lead to high amounts of seismic activity.
 
-Next I will compare 2 numerical variables `mag` and `sig`. `sig` is a number that signifies the significance of the seismic event. While the calculation of this number does take into account the magnitude, it also includes other factors such as intensity, felt reports, and estimated impact. While I would guess that there would be a positive relationship between the two variables, this graph will help with our exploratory data analysis so we can find out I will also 
+
+
+Next I will compare 2 numerical variables `mag` and `sig`. `sig` is a number that signifies the significance of the seismic event. While the calculation of this number does take into account the magnitude, it also includes other factors such as intensity, felt reports, and estimated impact. While I would guess that there would be a positive relationship between the two variables, this graph will help to see the relationship.
 
 ```{r}
 c<- ggplot(earthquakes.all)
 c+ geom_point(aes(x = mag, y = sig)) +
-  facet_wrap(~ magType)
+  labs(title = "Scatterplot of Earthquake Manitudes vs. Significance", x = "Magnitude", y= "Significance")
 ```
+Here we can see the positive relationship between magnitude and significance. The interesting aspect of this plot is the outlier. It appears there is one earthquake with a significance much higher than all of the other. This may be a location that needs more investigation.
 
 
 Next I will use `ggplot` to make a map of some of the earthquake data. I will start by using my `eq.location` function to get data from the API in an 800km radius around the center of California. I will then plot the points on a base map of the United States and color the points on a color gradient with light blue being the lowest magnitude earthquakes and dark blue being the highest. 
-
 
 ```{r}
 #call data from API
