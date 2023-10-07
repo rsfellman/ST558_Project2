@@ -1,5 +1,5 @@
 ---
-title: "Vignette"
+title: "Interacting with the USGS Earthquake API"
 author: "Rachel Fellman"
 date: "2023-10-02"
 output: github_document
@@ -8,15 +8,21 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-This document is intended to explain how to contact and API and query, parse, and return readable data from an API. I will be accessing the earthquake api from the USGS. There is no API key required to access this API.
+This document is intended to explain how to contact and API and query, parse, and return readable data from an API. I will be accessing the earthquake api from the USGS. I will start by building some functions to access different endpoints of the API. This API can return data in a variety of forms but for this example I will be specifying in the URL that I want data in geoJSON format.
 
-I am interested in investigating earthquakes of varying magnitudes and regions. Do different regions have higher magnitude earthquakes than others? Are most earthquakes within a certain magnitude range? Are there different measurement methods that are more common for measuring earthquake magnitude? Are there observable patterns in the earthquake data?
+
+Since I am going to be retrieving data on earthquakes, I have developed a few questions I'd like to investigate regarding earthquake magnitudes and regions. 
+  *Do different regions have higher magnitude earthquakes than others? 
+  *Are most earthquakes within a certain magnitude range? 
+  *Are there different measurement methods that are more common for measuring earthquake magnitude? 
+  *Are there observable patterns in the earthquake data?
 
 # Required Packages
 I used the following packages to create the vignette:
   * `httr`: for accessing the API
   * `jsonlite`: to convert API data into a data frame
   * `tidyverse`: used for piping, plotting, and other basic functions
+  * `maps`: used to get longitude and latitude data for creating maps
 
 
 I first started by loading the necessary packages into rstudio. 
@@ -31,23 +37,22 @@ library(maps)
 
 # Functions to Query Endpoints
 
-Before creating functions to query specific endpoints of the API, I will create a function to assign labels to each variable, making them easier to understand. The input for this function is a singular data frame. 
+Before creating functions to query specific endpoints of the API, I will create a function to rename certain variables, making them easier to understand. The input for this function is a singular `data.frame`. 
 
 ```{r}
-label <- function(x){
-  x <- apply_labels(x,
-                    mag = 'Magnitude')
+name <- function(x){
+  x <- rename(x, magnitude = mag, significance = sig, network = net, measurement.method = magType, station.distance = dmin, num.of.stations = nst, event.type = type)
 }
 ```
 
-The first function `query.data` will allow the user to chose a minimum and maximum magnitude, maximum gap, and event type.  Magnitude values can range from -1 to 10. The gap is the azimuthal gap between stations. The smaller the gap, the more accurate the calculations of the position of the earthquake are. This value can be between 0.0 and 180.0 degrees. The event type will have a default value of earthquake but can also take on any of the following values:
+`query.data`
+
+The function `query.data` interacts with the `minmagnitude`, `maxmagnitude`, `maxgap`, and `eventtype` endpoints. It will allow the user to chose a minimum and maximum magnitude, maximum gap, and event type and will return a `tibble` containing the earthquake data. Magnitude values can range from -1 to 10. The gap is the azimuthal gap between stations. The smaller the gap, the more accurate the calculations of the position of the earthquake are. This value can be between 0.0 and 180.0 degrees. The event type will have a default value of earthquake but can also take on any of the following values:
 
   *accidental explosion
-  *acoustic noise
   *acoustic_noise
   *anthropogenic_event
   *building collapse
-  *chemical explosion
   *chemical_explosion
   *collapse
   *experimental explosion
@@ -58,11 +63,9 @@ The first function `query.data` will allow the user to chose a minimum and maxim
   *landslide
   *meteor
   *meteorite
-  *mine collapse
   *mine_collapse
   *mining explosion
   *mining_explosion
-  *not reported
   *not_reported
   *nuclear explosion
   *nuclear_explosion
@@ -77,8 +80,8 @@ The first function `query.data` will allow the user to chose a minimum and maxim
   *sonicboom
   *sonic_boom
   *train crash
-  *volcanic eruption
-  *volcanic explosion
+  *volcanic_eruption
+  *volcanic_explosion
 
 ```{r}
 query.data <- function(min.mag = 0, max.mag = 10, max.gap = 90.0, event.type = "earthquake"){
@@ -94,22 +97,24 @@ query.data <- function(min.mag = 0, max.mag = 10, max.gap = 90.0, event.type = "
   
   #select specific columns
   quake.data.col<- quake.data$features$properties %>% 
-    select('mag','place','time','sig','net','code','ids','dmin','nst','rms','gap','magType','type')
+    select('mag','place','time','sig','net','code','dmin','nst','rms','gap','magType','type') %>% 
+    name()
   
-  #return a dataframe of earthquake data
+  #return a tibble. of earthquake data
   return(as_tibble(quake.data.col))
 }
 ```
 
-The next function `eq.location` will allow the user to specify a latitude, longitude and maximum radius in km. This function will return data on earthquakes that occurred within the specified radius of the chosen longitude and latitude. The only default value will be the maximum radius set to 100 km. Latitude values can be from -90 to 90 degrees and longitude values can span from -180 to 180 degrees. 
+The next function `eq.location` will interact once again with the `eventtype` endpoint but will also include the `location` endpoint that requires longitude, latitude, and radius to perform a circle search. `eq.location` to will allow the user to specify a latitude, longitude and maximum radius in km. This function will return data on earthquakes that occurred within the specified radius of the chosen longitude and latitude in the form of a `tibble`. The only default values will be the `max.radius` set to 100 km and the `event.type` set to earthquake. Latitude values can be from -90 to 90 degrees and longitude values can span from -180 to 180 degrees. The maximum radius can be anywhere from 0 to 20001.6 km.
 
 ```{r}
-eq.location <- function(latitude, longitude, max.radius = 100){
+eq.location <- function(latitude, longitude, max.radius = 100, event.type = "earthquake"){
   #create URL for user specified depth
-  my.url <- paste0("https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake",
+  my.url <- paste0("https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson",
                 "&latitude=", latitude,
                 "&longitude=", longitude,
-                "&maxradiuskm=", max.radius)
+                "&maxradiuskm=", max.radius,
+                "&eventtype=", event.type)
   
   #get data from api with url created above
   quake.data <- fromJSON(my.url)
@@ -119,19 +124,25 @@ eq.location <- function(latitude, longitude, max.radius = 100){
   
   #combine longitude and latitude data with other data
   quake.data.all <- cbind(quake.loc, quake.data$features$properties)
+  
   #select specific columns .
   quake.data.col <- quake.data.all %>% 
-    select('mag','place','time','sig','net','code','ids','dmin','nst','rms','gap','magType','type', 'longitude','latitude')
+    select('mag','place','time','sig','net','code','ids','dmin','nst','rms','gap','magType','type', 'longitude','latitude') %>% 
+    name()
+  
+  #return a tibble of earthwuake data.
    return(as_tibble(quake.data.col))
 }
 ```
 
-# Call API Functions
+# Data Exploration
 
-I will pull data from the API using my `query.data` function. I will set the minimum magnitude to 0 and the maximum to 4, to look at smaller earthquakes. (Magnitude is a measure of the size of an earthquake at its source). I will set the maximum gap to 180 degrees since the USGS states that earthquake locations with a gap larger than 180 degrees tend to have larger location and depth uncertainties. I will not change the settings for event type since I am primarily interested only in events classified as earthquakes.
+Next I will pull data from some of the earthquake API endpoints and do some exploratory data analysis.
+
+I will pull data from the API using my `query.data` function. I will set the minimum magnitude to -1 and the maximum to 4, to look at smaller earthquakes. (Magnitude is a measure of the size of an earthquake at its source). I will set the maximum gap to 180 degrees since the USGS states that earthquake locations with a gap larger than 180 degrees tend to have larger location and depth uncertainties. I will not change the settings for event type since I am primarily interested only in events classified as earthquakes.
 
 ```{r}
-earthquakes.low <- query.data(min.mag = 0, max.mag = 4, max.gap = 180)
+earthquakes.low <- query.data(min.mag = -1, max.mag = 4, max.gap = 180)
 earthquakes.low
 ```
 
@@ -142,84 +153,31 @@ earthquakes.high <- query.data(min.mag = 4, max.mag = 10, max.gap = 180)
 earthquakes.high
 ```
 
-I will also pull data from my `eq.location` function. I will specify the latitude 19.74 and longitude -155.84. This is the latitude and longitude for Hawaii. I will increase the maximum radius to 200km. I am choosing Hawaii for this function since it is a location in the US known for having siesmic acitvity. 
-
-I will also create a data frame for all earthquakes magnitude 0 to 10.
+I will also create a pull data for all earthquakes magnitude -1 to 10.
 ```{r}
 earthquakes.all <- query.data(min.mag = -1, max.mag = 10, max.gap = 180)
 ```
 
 
-```{r}
-eq.Hawaii <- eq.location(latitude = 19.74, longitude = -155.84, max.radius = 200)
-eq.Hawaii
-```
-
-# Contingency Tables
-
-Next I will examine the data pulled from the API with my functions. Using `earthquakes.low` and `earthquakes.high`, I will create contingency tables fo magType and net. magType tells us the method used to calculate the magnitude for the event. This is of interest because different methods could produce different results. The net variable provides the ID for the network that is the main source of information for a given earthquake. The networks include places such as AK: ALaska Earthquake Center, HV: Hawaii Vocano Observatory, etc. The reason I am creating a 2 way table with magType and net is to see if different networks use a certain method more.
+Next I will examine the data pulled from the API with my functions. Using `earthquakes.low` and `earthquakes.high`, I will create contingency tables for `measurement.method` and `network`. `measurement.method` tells us the method used to calculate the magnitude for the event. This is of interest because different methods could produce different results. The `network` variable provides the ID for the network that is the main source of information for a given earthquake. The networks include places such as AK: ALaska Earthquake Center, HV: Hawaii Vocano Observatory, etc. The reason I am creating a 2 way table with magType and net is to see if different networks use a certain method more.
 
 ```{r}
-table(earthquakes.low$magType, earthquakes.low$net)
+table(earthquakes.low$measurement.method, earthquakes.low$network)
 ```
 
-When looking at the lower magnitude earthquakes it seems like the ml method is used most frequently. The ML method is the original magnitude scale defined Richter and Gutenberg. It makes sense that this is a commonly used method by many stations for low magnitude earthquakes since the ML scale is most accurate for earthquakes with a magnitude less than 4. The nc network (California Integrated Seismic Network) also has a high frequency for the md method. This method is also useful for lower magnitude earthquakes and is sometimes the only available method for very small seismic events. 
+When looking at the lower magnitude earthquakes it seems like the ml method is used most frequently. The ML method is the original magnitude scale defined Richter and Gutenberg. It makes sense that this is a commonly used method by many stations for low magnitude earthquakes since the ML scale is most accurate for earthquakes with a magnitude less than 4. The nc network (California Integrated Seismic Network: Northern California) also has a high frequency for the md method. This method is also useful for lower magnitude earthquakes and is sometimes the only available method for very small seismic events. 
 
-```{r}
-table(earthquakes.high$magType, earthquakes.high$net)
-```
-
-My first observation is that there are fewer networks that measure high magnitude earthquakes. This may be because there are fewer occurrences of high magnitude earthquakes. The most commonly used method by the us network (USGS National Earthquake Information Center) Is the mb method. This makes sense since the mb method is useful for earthquakes of magnitude 4 to 6.5.
-
-
-# Numerical Summaries Across Categorical Variables
-
-I am interested to look at the average, median, and standard deviation low magnitude and high magnitude earthquakes measured by each network. The reason I am including both the median and mean is to account for outliers affecting the average.
-
-```{r}
-earthquakes.low %>% 
-  group_by(net) %>% 
-  summarize(min = min(mag), max = max(mag), avg = mean(mag), med = median(mag), sd= sd(mag))
-```
-The highest average earthquakes had data collected by the Puerto Rico Seismic Network (pr) and the Center for Earthquake Research and Information (SE). I didn't know that Puerto Rico was a location that had earthquakes so this is a surprise to me. 
-
-```{r}
-earthquakes.high %>% 
-  group_by(net) %>% 
-  summarize(min = min(mag), max = max(mag), avg = mean(mag), med = median(mag), sd= sd(mag))
-```
-
-The maximum earthquake measured was a magnitude 6.8 much higher than the averages for all networks which stay between 4 and 5. 
-
-I am curious where the 6.8 magnitude earthquake was so instead of just summarizing I will use the `filter` function and explore further.
-
-```{r}
-earthquakes.high %>% 
-  filter(mag == 6.8)
-```
-The highest magnitude earthquake in the data we pulled from the API was in Al Haouz, Morocco.
-
-Next I want to look at measures of center and spread for the magnitude of earthquakes in Hawaii across the magType variable.  
-```{r}
-eq.Hawaii %>% 
-  group_by(magType) %>% 
-  summarize(min = min(mag), max = max(mag), avg = mean(mag), med = mean(mag), sd = sd(mag))
-```
-This shows that the minimum magnitude earthquake measuring .13 was measured using the md method while the smallest earthquake measured using the ml method was a magnitude 1. This makes sense since the md method is better for measuring very small events.
-
-# Plots
-
-First I will create a bar plot of the networks and magtypes for the lower magnitue data. Since the most used measurement methods for low magnitude earthquakes are md and ml I will first filter to include only those methods. This will just give us a better visualization of which networks use which methods more frequently.
+To better visualize this I will create a bar plot of the `network` and `measurement.method` for the lower magnitude data. Since the most used measurement methods for low magnitude earthquakes are md and ml I will first filter to include only those methods. This will just give us a better visualization of which networks use which methods more frequently.
 
 ```{r}
 #filter magType variable
 method.earthquake.low <- earthquakes.low %>% 
-  filter(magType == "md" | magType == "ml")
+  filter(measurement.method == "md" | measurement.method == "ml")
 
 #create base plot
-g<- ggplot(data = method.earthquake.low, aes(x=magType))
+g<- ggplot(data = method.earthquake.low, aes(x=measurement.method))
 #add bar plot with net as the factor
-g + geom_bar(aes(fill = as.factor(net)), position = "dodge") +
+g + geom_bar(aes(fill = as.factor(network)), position = "dodge") +
 #add labels/ titles
   labs(x = "Measurement Method", title = "Magnitude Measurement Methods Across Networks for Earthquakes Under Magnitude 4") + 
   scale_fill_discrete(name= "Network", labels = c("Alaska Volcano Observatory", "California Integrated Seismic Network: Southern California", "Hawaii Volcano Observatory", "Montana Bureau of Mines and Geology", "California Integrated Seismic Network: Northern Californa", "New Madrid Seismic Network","Oklahoma Seismic Network", "Puerto Rico Seismic Network","Center for Earthquake Research and Information", "USGS National Earthquake Information Center","Texas Seismological Network", "University of Utah Seismograph Stations", "Pacific Northwest Seismic Network")) +
@@ -230,10 +188,27 @@ g + geom_bar(aes(fill = as.factor(net)), position = "dodge") +
 From this bar graph it is easy to see that the California Integrated Seismic network in both Northern and Southern California collect a large amount of earthquake data. However, it is easy to see here that the md method is used most commonly by the Northern California network and the ml method by the Southern California network. This may be due to the typical magnitude of the earthquakes found in each region. 
 
 
+Looking at the high magnitude earthquakes, I will create the same contingency table as above with `measurement.method` and `network` 
+```{r}
+table(earthquakes.high$measurement.method, earthquakes.high$network)
+```
+
+My first observation is that there are fewer networks that measure high magnitude earthquakes. This may be because there are fewer occurrences of high magnitude earthquakes. The most commonly used method by the us network (USGS National Earthquake Information Center) Is the mb method. This makes sense since the mb method is useful for earthquakes of magnitude 4 to 6.5.
+
+
+After examining the measurement methods, I am interested to look at the average, median, and standard deviation low magnitude and high magnitude earthquakes measured by each network. The reason I am including both the median and mean is to account for outliers that could effect the average. I will be grouping by `network` to see if the earthquake magnitudes differ between them.
+
+```{r}
+earthquakes.low %>% 
+  group_by(network) %>% 
+  summarize(min = min(magnitude), max = max(magnitude), avg = mean(magnitude), med = median(magnitude), sd= sd(magnitude))
+```
+The highest average earthquake magnitudes had data collected by the Puerto Rico Seismic Network (pr) and the Center for Earthquake Research and Information (SE). I didn't know that Puerto Rico was a location that had larger earthquakes so this is a surprise to me. Perhaps Puerto Rico would be a good location to focus on in future studies.
+
 Next I will create a histogram of the magnitude for the lower magnitude earthquakes. I am interested in the distribution of the earthquakes and if it is skewed in any direction.
 ```{r}
 #create base plot
-a <- ggplot(data= earthquakes.low, aes(x = mag))
+a <- ggplot(data= earthquakes.low, aes(x = magnitude))
 #add histogram
 a + geom_histogram(color = "blue",fill = "darkgrey", size = .6, binwidth = .2, weight = 2) +
 #add labels
@@ -249,8 +224,8 @@ I will use `geom_density` to look at the spread of the data.
 ```{r}
 #create base plot
 b<- ggplot(earthquakes.all)
-#add boxplot layer
-b + geom_density(aes(x= mag), adjust = .5, alpha = .5, fill = "lightblue") +
+#add layer
+b + geom_density(aes(x= magnitude), adjust = .5, alpha = .5, fill = "lightblue") +
 #add labels/titles
   labs(x = "Magnitude", title= "Kernel Density Plot of Earthquake Magnitudes")
 
@@ -258,7 +233,40 @@ b + geom_density(aes(x= mag), adjust = .5, alpha = .5, fill = "lightblue") +
 
 When looking at the data as whole, it still appears to be right skewed, meaning that the majority of earthquakes are smaller/have a lower magnitude. However we can see that there are also quite a few earthquakes that measure around a magnitude of 4.5, as the density plot displays a local maximum there.
 
-I am also curious about the distribution of the Hawaii earthquake magnitudes. I will create a density plot of the Hawaii data (colored in green) layered over all of the smaller (magnitude < 4) earthquake data to see if they follow a similar distributions. 
+Next I will find measures of center and spread for the high magnitude earthquakes.
+```{r}
+earthquakes.high %>% 
+  group_by(network) %>% 
+  summarize(min = min(magnitude), max = max(magnitude), avg = mean(magnitude), med = median(magnitude), sd= sd(magnitude))
+```
+
+The maximum earthquake measured was a magnitude 6.8 much higher than the averages for all networks which stay between 4 and 5. 
+
+I am curious where the 6.8 magnitude earthquake was so instead of just summarizing I will use the `filter` function and explore further.
+
+```{r}
+earthquakes.high %>% 
+  filter(magnitude == 6.8)
+```
+The highest magnitude earthquake in the data we pulled from the API was in Al Haouz, Morocco.
+
+
+Instead of just looking at high and low magnitude earthquake data, I will use my function`eq.location` to examine earthquake in Hawaii. I will specify the latitude 19.74 and longitude -155.84. This is the latitude and longitude for Hawaii. I will increase the maximum radius to 200km. I am choosing Hawaii for this function since it is a location in the US known for having siesmic acitvity. 
+```{r}
+eq.Hawaii <- eq.location(latitude = 19.74, longitude = -155.84, max.radius = 200)
+eq.Hawaii
+```
+
+Next I want to look at measures of center and spread for the magnitude of earthquakes in Hawaii across the magType variable.  
+```{r}
+eq.Hawaii %>% 
+  group_by(measurement.method) %>% 
+  summarize(min = min(magnitude), max = max(magnitude), avg = mean(magnitude), med = mean(magnitude), sd = sd(magnitude))
+```
+This shows that the minimum magnitude earthquake measuring .13 was measured using the md method while the smallest earthquake measured using the ml method was a magnitude 1. This makes sense since the md method is better for measuring very small events. 
+
+
+I am also curious about the distribution of the Hawaii earthquake magnitudes in comparison to all smaller earthquakes. I will create a density plot of the Hawaii data (colored in green) layered over all of the smaller (magnitude < 4) earthquake data to see if they follow a similar distributions. The reason I am using the low magnitude data is because the maximum magnitude for Hawaii earthquakes was 3.53.
 ```{r}
 #create base plot
 a <- ggplot(data= earthquakes.low, aes(x = mag))
@@ -269,7 +277,69 @@ a + geom_histogram(fill = "darkgrey", binwidth = .3, color = "black") +
   labs(x = "Magnitude", title = "Histogram of Earthquakes of Magnitude < 4 and Hawaii Earthquake Magnitudes")
   
 ```
-In this histogram we can see that Hawaii's earthquake data is skewed a bit to the left with many earthquakes closer to a magnitude of 2. This does not follow the same trend as data on all smaller earthquakes that records the majority of earthquakes around a magnitude of 1. I am not surprised by this data since Hawaii is an active volcano which can lead to high amounts of seismic activity.
+In this histogram we can see that Hawaii's earthquake data is skewed a bit to the left with many earthquakes closer to a magnitude of 2. This does not follow the same trend as data on all smaller earthquakes that in which the majority of earthquakes are around a magnitude of 1. I am not too surprised by this data since Hawaii is an active volcano which can lead to high amounts of seismic activity.
+
+The Hawaii data was interesting, but I'm also wanting to explore data in some other locations. I will next examine California, a state know for getting a lot of earthquakes.
+
+I will use `ggplot` with `geom_polygon` to make a map of some of the earthquake data. I will start by using my `eq.location` function to get data from the API in an 800km radius around the center of California. I will then plot the points on a base map of the United States and color the points on a color gradient with light blue being the lowest magnitude earthquakes and dark blue being the highest. 
+
+```{r}
+#call data from API
+eq.california <- eq.location(latitude = 36.77, longitude = -119.42, max.radius = 800)
+```
+
+
+```{r}
+#set up state data points
+state<- map_data("state")
+
+#creat base map layer
+d<- ggplot()
+#add latitude and longitude information for the map
+ d + geom_polygon(data = state, aes(x=long, y= lat, group = group), color = "darkgrey", fill = "grey") +
+#add the points of the earthquakes in california
+   geom_point(data = eq.california, aes(x = longitude, y = latitude, colour = magnitude))  +
+#add a color gradient for the magnitude of the earthquakes
+   scale_colour_gradient(low = "lightblue", high = "navy", name = "Magnitude")+
+#adjust the coordinates
+  coord_cartesian(xlim = c(-127,-110), ylim = c(30,50)) +
+#add labels.
+  labs(x = "Longitude", y = "Latitude", title = "Plot of Earthquake Locations Colored by Magnitude in a 800 km Radius of the Center of California") +
+   theme(title = element_text(size=9))
+
+```
+
+The interesting thing about this plot is that we can actually see the San Andreas Fault that follows the California Coast. The map used a color gradient for the magnitude of the earthquake, allowing more information to be displayed. Interestingly the highest magnitude earthquake does not appear to be on the San Andreas Fault, but is instead inland in Northern California. This could be of interest for future studies. The majority of the earthquakes seem to be in the 1 to 3 magnitude range.
+
+
+Since the California map provided a lot of information, I will also plot the earthquake data for the entire globe. The points will once again be colored by magnitude. First I will call data from the API using the `eq.location` function with the latitude and longitude both set to 0 and the maximum radius at its maximum value.
+```{r}
+#call data from API
+eq.world <- eq.location(latitude = 0, longitude = 0 , max.radius = 20001.6)
+```
+
+
+```{r}
+#set up state data points
+world<- map_data("world")
+
+#creat base map layer
+e<- ggplot()
+#add latitude and longitude information for the map
+ e + geom_polygon(data = world, aes(x=long, y= lat, group = group), color = "darkgrey", fill = "grey") +
+#add the points of the earthquakes in california
+   geom_point(data = eq.nc, aes(x = longitude, y = latitude, colour = magnitude))  +
+#add a color gradient for the magnitude of the earthquakes
+   scale_colour_gradient(low = "green", high = "red", name = "Magnitude")+
+#adjust the coordinates
+  #coord_cartesian(xlim = c(-127,-65), ylim = c(25,50)) +
+#add labels.
+  labs(x = "Longitude", y = "Latitude", title = "World Map of Earthquake Locations Colored by Magnitude") +
+   theme(title = element_text(size=10))
+```
+Just like how we could visualize the San Andreas Fault in the California Map, we can see the Ring of Fire in the World Map. Interestingly, it seems like the United States has smaller earthquakes than the rest of the Globe. U.S. earthquake magnitudes colored in yellows and greens range from 1 to 3 while most other earthquakes outside of the U.S. are colored in orange indicating a magnitude of 3 to 5. 
+
+
 
 
 
@@ -277,34 +347,7 @@ Next I will compare 2 numerical variables `mag` and `sig`. `sig` is a number tha
 
 ```{r}
 c<- ggplot(earthquakes.all)
-c+ geom_point(aes(x = mag, y = sig)) +
+c+ geom_point(aes(x = station.distance, y = magnitude)) +
   labs(title = "Scatterplot of Earthquake Manitudes vs. Significance", x = "Magnitude", y= "Significance")
 ```
 Here we can see the positive relationship between magnitude and significance. The interesting aspect of this plot is the outlier. It appears there is one earthquake with a significance much higher than all of the other. This may be a location that needs more investigation.
-
-
-Next I will use `ggplot` to make a map of some of the earthquake data. I will start by using my `eq.location` function to get data from the API in an 800km radius around the center of California. I will then plot the points on a base map of the United States and color the points on a color gradient with light blue being the lowest magnitude earthquakes and dark blue being the highest. 
-
-```{r}
-#call data from API
-eq.california <- eq.location(latitude = 36.77, longitude = -119.42, max.radius = 800)
-
-#set up state data points
-state<- map_data("state")
-
-#creat base map layer
-d<- ggplot()
-#add latitude and longitude information for the map
- d + geom_polygon(data = state, aes(x=long, y= lat, group = group), color = "black", fill = "grey") +
-#add the points of the earthquakes in california
-   geom_point(data = eq.california, aes(x = longitude, y = latitude, colour = mag))  +
-#add a color gradient for the magnitude of the earthquakes
-   scale_colour_gradient(low = "lightblue", high = "darkblue", name = "Magnitude")+
-#adjust the coordinates
-  coord_cartesian(xlim = c(-127,-110), ylim = c(30,50)) +
-#add labels.
-  labs(x = "Longitude", y = "Latitude", title = "Plot of Earthquake Locations in a 800 km Radius of the Center of California")
-
-```
-
-The interesting thing about this plot is that we can actually see the San Andreas Fault that follows the California Coast. The map used a color gradient for the magnitude of the earthquake, allowing more information to be displayed on them map. Interestingly the highest magnitude earthquake does not appear to be on the San Andreas Fault, but is instead inland in Northern California. This could be of interest for future studies. The majority of the earthquakes seem to be in the 1 to 3 magnitude range.
