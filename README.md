@@ -149,22 +149,22 @@ earthquakes.low <- eq.data(min.mag = -1, max.mag = 4, max.gap = 180)
 earthquakes.low
 ```
 
-    ## # A tibble: 5,097 × 12
-    ##    magni…¹ place    time signi…² network code  stati…³ num.o…⁴    rms   gap measu…⁵
-    ##      <dbl> <chr>   <dbl>   <int> <chr>   <chr>   <dbl>   <int>  <dbl> <dbl> <chr>  
-    ##  1    1.35 14 k… 1.70e12      28 ci      4057…  0.0277      11 0.36     118 ml     
-    ##  2    1.87 8 km… 1.70e12      54 hv      7360… NA           18 0.120    129 ml     
-    ##  3    3    west… 1.70e12     139 tx      2023…  0           20 0.2       64 ml(tex…
-    ##  4    2.29 14 k… 1.70e12      81 hv      7360… NA           41 0.130    173 ml     
-    ##  5    0.82 9 km… 1.70e12      10 ci      4057…  0.0358      21 0.39     127 ml     
-    ##  6    0.97 2 km… 1.70e12      14 ci      4057…  0.0609      18 0.26      66 ml     
-    ##  7    1.92 10 k… 1.70e12      57 ci      4057…  0.0443      46 0.23      53 ml     
-    ##  8    0.66 7 km… 1.70e12       7 nc      7394…  0.0118      11 0.01      53 md     
-    ##  9    1.82 12 k… 1.70e12      51 hv      7360… NA           35 0.0900   177 md     
-    ## 10    1.74 43 k… 1.70e12      47 ci      4057…  0.0690      11 0.2       77 ml     
-    ## # … with 5,087 more rows, 1 more variable: event.type <chr>, and abbreviated
-    ## #   variable names ¹​magnitude, ²​significance, ³​station.distance, ⁴​num.of.stations,
-    ## #   ⁵​measurement.method
+    ## # A tibble: 5,096 × 12
+    ##    magnitude place         time signi…¹ network code  statio…² num.o…³    rms   gap
+    ##        <dbl> <chr>        <dbl>   <int> <chr>   <chr>    <dbl>   <int>  <dbl> <dbl>
+    ##  1      0.57 8 km WNW … 1.70e12       5 nc      7394…  0.00583       8 0.01     103
+    ##  2      1.35 14 km WSW… 1.70e12      28 ci      4057…  0.0277       11 0.36     118
+    ##  3      1.87 8 km ENE … 1.70e12      54 hv      7360… NA            18 0.120    129
+    ##  4      3    western T… 1.70e12     139 tx      2023…  0            20 0.2       64
+    ##  5      2.29 14 km SSW… 1.70e12      81 hv      7360… NA            41 0.130    173
+    ##  6      0.82 9 km WSW … 1.70e12      10 ci      4057…  0.0358       21 0.39     127
+    ##  7      0.97 2 km E of… 1.70e12      14 ci      4057…  0.0609       18 0.26      66
+    ##  8      1.92 10 km S o… 1.70e12      57 ci      4057…  0.0443       46 0.23      53
+    ##  9      0.66 7 km W of… 1.70e12       7 nc      7394…  0.0118       11 0.01      53
+    ## 10      1.82 12 km E o… 1.70e12      51 hv      7360… NA            35 0.0900   177
+    ## # … with 5,086 more rows, 2 more variables: measurement.method <chr>,
+    ## #   event.type <chr>, and abbreviated variable names ¹​significance,
+    ## #   ²​station.distance, ³​num.of.stations
 
 I will again pull data from the API using the `eq.data` function but
 changing the magnitude settings to be between 4 and 10. All other inputs
@@ -175,10 +175,10 @@ earthquakes.high <- eq.data(min.mag = 4, max.mag = 10, max.gap = 180)
 earthquakes.high
 ```
 
-    ## # A tibble: 881 × 12
+    ## # A tibble: 880 × 12
     ##    magnit…¹ place    time signi…² network code  stati…³ num.o…⁴   rms   gap measu…⁵
     ##       <dbl> <chr>   <dbl>   <int> <chr>   <chr>   <dbl>   <int> <dbl> <dbl> <chr>  
-    ##  1      5   15 k… 1.70e12     434 us      6000…   1.71      160  0.8     16 mww    
+    ##  1      5   15 k… 1.70e12     532 us      6000…   1.71      160  0.8     16 mww    
     ##  2      4.8 Chag… 1.70e12     354 us      6000…   3.78       48  1.3    112 mb     
     ##  3      4.3 196 … 1.70e12     284 us      6000…   2.41       26  1.13   116 mb     
     ##  4      4.1 5 km… 1.70e12     259 us      6000…   0.661      25  0.71   111 mb     
@@ -188,7 +188,7 @@ earthquakes.high
     ##  8      4.4 198 … 1.70e12     298 us      6000…   2.49       24  0.78    81 mb     
     ##  9      4.8 203 … 1.70e12     354 us      6000…   2.53       55  0.78    75 mb     
     ## 10      4.7 30 k… 1.70e12     341 us      6000…   5.80       74  0.63   150 mb     
-    ## # … with 871 more rows, 1 more variable: event.type <chr>, and abbreviated
+    ## # … with 870 more rows, 1 more variable: event.type <chr>, and abbreviated
     ## #   variable names ¹​magnitude, ²​significance, ³​station.distance, ⁴​num.of.stations,
     ## #   ⁵​measurement.method
 
@@ -216,11 +216,11 @@ table(earthquakes.low$measurement.method, earthquakes.low$network)
 
     ##             
     ##                av   ci   hv   mb   nc   nm   nn   ok   pr   se   tx   us   uu   uw
-    ##   mb            0    0    0    0    0    0    0    0    0    0    0   38    0    0
+    ##   mb            0    0    0    0    0    0    0    0    0    0    0   39    0    0
     ##   mb_lg         0    0    0    0    0    0    0    0    0    0    0    8    0    0
-    ##   md            0    0  233    0 1627   31    0    0   50    6    0    0   93    7
+    ##   md            0    0  233    0 1628   31    0    0   50    6    0    0   93    7
     ##   mh            0    0    0    0    1    0    0    0    0    0    0    0    0    1
-    ##   ml          509  922  237  163   10    0  282  198    0    0   78   50   93  288
+    ##   ml          508  922  234  163   10    0  282  198    0    0   78   50   93  289
     ##   ml(texnet)    0    0    0    0    0    0    0    0    0    0  166    0    0    0
     ##   mlv           0    0    0    0    0    0    0    0    0    0    1    0    0    0
     ##   mw            0    0    0    0    4    0    0    0    0    0    0    0    0    0
@@ -261,7 +261,7 @@ g.plot<- g + geom_bar(aes(fill = as.factor(network)), position = "dodge") +
 g.plot
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 From this bar graph it is easy to see that the California Integrated
 Seismic network in both Northern and Southern California collect a large
@@ -279,7 +279,7 @@ table(earthquakes.high$measurement.method, earthquakes.high$network)
 
     ##             
     ##               at  nc  tx  us  uw
-    ##   mb           0   0   0 744   0
+    ##   mb           0   0   0 743   0
     ##   Mb           1   0   0   0   0
     ##   ml           0   0   1   3   1
     ##   Ml           1   0   0   0   0
@@ -311,20 +311,20 @@ earthquakes.low %>%
     ## # A tibble: 14 × 6
     ##    network    min   max    avg   med    sd
     ##    <chr>    <dbl> <dbl>  <dbl> <dbl> <dbl>
-    ##  1 av      -1      2.24 0.0866 0.04  0.546
-    ##  2 ci      -0.11   3.52 1.11   1.04  0.502
-    ##  3 hv       0.130  3.53 1.88   1.9   0.506
-    ##  4 mb       0.17   2.62 1.27   1.21  0.543
-    ##  5 nc      -0.42   3.97 1.06   1.02  0.596
-    ##  6 nm       1.18   2.94 1.86   1.78  0.449
-    ##  7 nn      -0.5    3.3  0.850  0.9   0.740
-    ##  8 ok       0.41   3.68 1.56   1.48  0.534
-    ##  9 pr       1.71   3.38 2.50   2.47  0.356
-    ## 10 se       1.68   2.38 2.05   2.06  0.251
-    ## 11 tx       1.6    4    2.30   2.2   0.426
-    ## 12 us       1.5    4    3.24   3.4   0.735
-    ## 13 uu      -0.8    2.75 0.928  0.98  0.677
-    ## 14 uw      -0.61   2.76 0.683  0.575 0.626
+    ##  1 av      -1      2.24 0.0870  0.04 0.546
+    ##  2 ci      -0.11   3.52 1.11    1.04 0.502
+    ##  3 hv       0.130  3.53 1.88    1.9  0.507
+    ##  4 mb       0.17   2.62 1.27    1.21 0.543
+    ##  5 nc      -0.42   3.97 1.06    1.02 0.596
+    ##  6 nm       1.18   2.94 1.86    1.78 0.449
+    ##  7 nn      -0.5    3.3  0.850   0.9  0.740
+    ##  8 ok       0.41   3.68 1.56    1.48 0.534
+    ##  9 pr       1.71   3.38 2.50    2.47 0.356
+    ## 10 se       1.68   2.38 2.05    2.06 0.251
+    ## 11 tx       1.6    4    2.30    2.2  0.426
+    ## 12 us       1.5    4    3.24    3.4  0.736
+    ## 13 uu      -0.8    2.75 0.928   0.98 0.677
+    ## 14 uw      -0.61   2.76 0.683   0.58 0.625
 
 The highest average earthquake magnitudes had data collected by the
 Puerto Rico Seismic Network (pr) and the Center for Earthquake Research
@@ -353,7 +353,7 @@ a.plot<- a + geom_histogram(color = "blue",fill = "darkgrey", size = .6, binwidt
 a.plot
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 The lower magnitude earthquakes appear to be fairly normally distributed
 with most earthquakes centering around a magnitude of 1.
@@ -373,7 +373,7 @@ b.plot<- b + geom_density(aes(x= magnitude), adjust = .5, alpha = .5, fill = "li
 b.plot
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 When looking at the data as whole, it appears to be right skewed,
 meaning that the majority of earthquakes are smaller/have a lower
@@ -432,7 +432,7 @@ eq.Hawaii <- eq.location(latitude = 19.74, longitude = -155.84, max.radius = 200
 eq.Hawaii
 ```
 
-    ## # A tibble: 527 × 15
+    ## # A tibble: 524 × 15
     ##    magnitude place    time signi…¹ network code  ids   stati…² num.o…³    rms   gap
     ##        <dbl> <chr>   <dbl>   <int> <chr>   <chr> <chr>   <dbl>   <int>  <dbl> <int>
     ##  1      1.87 8 km… 1.70e12      54 hv      7360… ,hv7…      NA      18 0.120    129
@@ -440,12 +440,12 @@ eq.Hawaii
     ##  3      1.82 12 k… 1.70e12      51 hv      7360… ,hv7…      NA      35 0.0900   177
     ##  4      1.73 <NA>  1.70e12      46 hv      7360… ,hv7…      NA      13 0.210    169
     ##  5      2.13 9 km… 1.70e12      70 hv      7360… ,hv7…      NA      16 0.11     110
-    ##  6      2.14 7 km… 1.70e12      70 hv      7360… ,hv7…      NA      33 0.270     93
+    ##  6      2.23 10 k… 1.70e12      77 hv      7360… ,hv7…      NA      18 0.08     113
     ##  7      2.03 4 km… 1.70e12      63 hv      7360… ,hv7…      NA      46 0.120    158
     ##  8      1.84 11 k… 1.70e12      52 hv      7360… ,hv7…      NA       9 0.340    221
     ##  9      1.86 <NA>  1.70e12      53 hv      7360… ,hv7…      NA      34 0.130    106
     ## 10      1.92 <NA>  1.70e12      57 hv      7360… ,hv7…      NA      34 0.120     98
-    ## # … with 517 more rows, 4 more variables: measurement.method <chr>,
+    ## # … with 514 more rows, 4 more variables: measurement.method <chr>,
     ## #   event.type <chr>, longitude <dbl>, latitude <dbl>, and abbreviated variable
     ## #   names ¹​significance, ²​station.distance, ³​num.of.stations
 
@@ -488,13 +488,14 @@ a.plot<- a + geom_histogram(fill = "darkgrey", binwidth = .3, color = "black") +
 a.plot
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- --> In this
-histogram we can see that Hawaii’s earthquake data is skewed a bit to
-the left with many earthquakes closer to a magnitude of 2. This does not
-follow the same trend as data on all smaller earthquakes that in which
-the majority of earthquakes are around a magnitude of 1. I am not too
-surprised by this finding since Hawaii has active volcanoes which can
-lead to high amounts of seismic activity.
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+In this histogram we can see that Hawaii’s earthquake data is skewed a
+bit to the left with many earthquakes closer to a magnitude of 2. This
+does not follow the same trend as data on all smaller earthquakes that
+in which the majority of earthquakes are around a magnitude of 1. I am
+not too surprised by this finding since Hawaii has active volcanoes
+which can lead to high amounts of seismic activity.
 
 The Hawaii data was interesting, but I’m also wanting to explore data in
 some other locations. I will next examine California, another state
@@ -533,7 +534,7 @@ d.plot<- d + geom_polygon(data = state, aes(x=long, y= lat, group = group), colo
 d.plot
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 The interesting thing about this plot is that we can actually see the
 San Andreas Fault that follows the California Coast. The majority of the
@@ -570,13 +571,14 @@ e.plot<- e + geom_polygon(data = world, aes(x=long, y= lat, group = group), colo
 e.plot
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- --> Just like
-how we could visualize the San Andreas Fault in the California Map, we
-can see the Ring of Fire in the World Map. Interestingly, it seems like
-the United States has smaller earthquakes than the rest of the Globe.
-U.S. earthquake magnitudes colored in yellows and greens range from 1 to
-3 while most other earthquakes outside of the U.S. are colored in orange
-indicating a magnitude of 3 to 5.
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+Just like how we could visualize the San Andreas Fault in the California
+Map, we can see the Ring of Fire in the World Map. Interestingly, it
+seems like the United States has smaller earthquakes than the rest of
+the Globe. U.S. earthquake magnitudes colored in yellows and greens
+range from 1 to 3 while most other earthquakes outside of the U.S. are
+colored in orange indicating a magnitude of 3 to 5.
 
 # Wrap Up
 

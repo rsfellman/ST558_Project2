@@ -167,6 +167,7 @@ earthquakes.low %>%
   group_by(network) %>% 
   summarize(min = min(magnitude), max = max(magnitude), avg = mean(magnitude), med = median(magnitude), sd= sd(magnitude))
 ```
+
 The highest average earthquake magnitudes had data collected by the Puerto Rico Seismic Network (pr) and the Center for Earthquake Research and Information (SE). I didn't know that Puerto Rico was a location that had larger earthquakes so this is a surprise to me. Perhaps Puerto Rico would be a good location to focus on in future studies.
 
 Next I will create a histogram of the magnitude for the lower magnitude earthquakes. I am interested in the distribution of the earthquakes and if it is skewed in any direction.
@@ -214,6 +215,7 @@ I am curious where the 6.9 magnitude earthquake was so instead of just summarizi
 earthquakes.high %>% 
   filter(magnitude == 6.9)
 ```
+
 The highest magnitude earthquake in the data we pulled from the API was in Madang, Papua New Guinea.
 
 Instead of just looking at high and low magnitude earthquake data, I will use my function`eq.location` to examine earthquakes in Hawaii. I will specify the latitude 19.74 and longitude -155.84. This is the latitude and longitude for Hawaii. I will increase the maximum radius to 200km. I am choosing Hawaii for this function since it is a location in the U.S. known for having a lot of seismic activity. 
@@ -228,6 +230,7 @@ eq.Hawaii %>%
   group_by(measurement.method) %>% 
   summarize(min = min(magnitude), max = max(magnitude), avg = mean(magnitude), med = mean(magnitude), sd = sd(magnitude))
 ```
+
 This shows that the minimum magnitude earthquake measuring .13 was measured using the md method while the smallest earthquake measured using the ml method was a magnitude 1. This makes sense since the md method is better for measuring very small events. 
 
 I am also curious about the distribution of the Hawaii earthquake magnitudes in comparison to all smaller earthquakes. I will create a histogram of the Hawaii data (colored in green) layered over all of the smaller (magnitude < 4) earthquake data to see if they follow a similar distributions. The reason I am using the low magnitude data is because the maximum magnitude for Hawaii earthquakes was 3.53.
@@ -242,6 +245,7 @@ a.plot<- a + geom_histogram(fill = "darkgrey", binwidth = .3, color = "black") +
 #display plot
 a.plot
 ```
+
 In this histogram we can see that Hawaii's earthquake data is skewed a bit to the left with many earthquakes closer to a magnitude of 2. This does not follow the same trend as data on all smaller earthquakes that in which the majority of earthquakes are around a magnitude of 1. I am not too surprised by this finding since Hawaii has active volcanoes which can lead to high amounts of seismic activity.
 
 The Hawaii data was interesting, but I'm also wanting to explore data in some other locations. I will next examine California, another state known for its earthquakes.
@@ -300,6 +304,7 @@ e.plot<- e + geom_polygon(data = world, aes(x=long, y= lat, group = group), colo
 # display plot
 e.plot
 ```
+
 Just like how we could visualize the San Andreas Fault in the California Map, we can see the Ring of Fire in the World Map. Interestingly, it seems like the United States has smaller earthquakes than the rest of the Globe. U.S. earthquake magnitudes colored in yellows and greens range from 1 to 3 while most other earthquakes outside of the U.S. are colored in orange indicating a magnitude of 3 to 5. 
 
 # Wrap Up
