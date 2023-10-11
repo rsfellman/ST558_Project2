@@ -19,10 +19,13 @@ that I want data in geoJSON format.
 
 Since I am going to be retrieving data on earthquakes, I have developed
 a few questions I’d like to investigate regarding earthquake magnitudes
-and regions. *Do different regions have higher magnitude earthquakes
-than others? *Are most earthquakes within a certain magnitude range?
+and regions. 
+*Do different regions have higher magnitude earthquakes
+than others? 
+*Are most earthquakes within a certain magnitude range?
 *Are there different measurement methods that are more common for
-measuring earthquake magnitude? *Are there observable patterns in the
+measuring earthquake magnitude? 
+*Are there observable patterns in the
 earthquake data?
 
 # Required Packages
