@@ -10,7 +10,7 @@ Rachel Fellman
 - [Data Exploration](#data-exploration)
 - [Wrap Up](#wrap-up)
 
-This document is intended to explain how to contact and API and query,
+This document is intended to explain how to contact an API and query,
 parse, and return readable data from an API. I will be accessing the
 earthquake API from the USGS. I will start by building some functions to
 access different endpoints of the API. This API can return data in a
